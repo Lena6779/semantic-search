@@ -11,8 +11,9 @@ from sentence_transformers import SentenceTransformer
 from ingest import MODEL_NAME, load_documents, chunk_documents, build_collection
 from search import search
 
-# Chunk sizes to compare. Overlap is ~10% of chunk size so a sentence split
-# at a chunk boundary still appears whole in at least one chunk.
+# Chunk sizes to compare. Overlap is kept at ~10% of chunk size in every
+# configuration so the comparison is fair; it repairs words or short phrases
+# cut at a chunk boundary.
 CONFIGS = [
     {"chunk_size": 200, "overlap": 20},
     {"chunk_size": 500, "overlap": 50},

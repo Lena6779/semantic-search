@@ -1,3 +1,11 @@
+"""Search functions for the semantic search tool.
+
+Embeds a question, queries the ChromaDB collection built by ingest.py,
+applies the similarity threshold and source filter, and returns ranked
+results with scores and relevance labels. Run directly for a terminal
+search loop: python search.py
+"""
+
 import chromadb
 from sentence_transformers import SentenceTransformer
 
@@ -24,7 +32,11 @@ def get_sources(collection):
 
 
 def relevance_label(score):
-    """Turn a similarity score into a simple label users can read at a glance."""
+    """Turn a similarity score into a simple label users can read at a glance.
+
+    Cutoffs come from testing: clearly correct answers scored above 0.5,
+    weaker matches scored in the 0.3s.
+    """
     if score >= 0.5:
         return "🟢 High"
     elif score >= 0.35:
@@ -33,16 +45,28 @@ def relevance_label(score):
 
 
 def search(query, collection, model, n_results=5, threshold=0.0, sources=None):
-    """Return top matching chunks above the threshold, ranked best first."""
+    """Return the top matching chunks above the threshold, ranked best first.
+
+    Args:
+        query: The user's question in plain English.
+        collection: ChromaDB collection to search.
+        model: SentenceTransformer used to embed the query (must match ingest.py).
+        n_results: Maximum number of results to return.
+        threshold: Minimum similarity score (0-1) a result needs to be included.
+        sources: Optional list of source filenames to limit the search to.
+
+    Returns:
+        List of dicts with rank, score, relevance, metadata (source file),
+        chunk_index, and text. Empty if the query is blank or nothing
+        scores above the threshold.
+    """
     if not query.strip():
-        return []  # empty query: nothing to search
+        return []  # Empty query: nothing to search
 
     query_embedding = model.encode([query]).tolist()
 
-    # Only search the chosen files; None means search everything
-    where = (
-        {"source": {"$in": sources}} if sources else None
-    )  # ChromaDB query filter for selected sources
+    # ChromaDB filter for the chosen files; None means search everything
+    where = {"source": {"$in": sources}} if sources else None
 
     results = collection.query(
         query_embeddings=query_embedding,
@@ -57,9 +81,9 @@ def search(query, collection, model, n_results=5, threshold=0.0, sources=None):
         zip(results["documents"][0], results["metadatas"][0], results["distances"][0]),
         start=1,
     ):
-        score = round(1 - dist, 3)  # cosine distance -> similarity (higher = better)
+        score = round(1 - dist, 3)  # Cosine distance -> similarity (higher = better)
         if score < threshold:
-            break  # results are sorted best first, so everything after is lower too
+            break  # Results are sorted best first, so everything after is lower too
 
         ranked.append(
             {
@@ -71,7 +95,7 @@ def search(query, collection, model, n_results=5, threshold=0.0, sources=None):
                 "text": text,
             }
         )
-    return ranked  # Outside loop so all results get collected first
+    return ranked
 
 
 if __name__ == "__main__":
@@ -87,6 +111,7 @@ if __name__ == "__main__":
         print("Searching...")
         for r in search(query, collection, model):
             print(
-                f"Rank {r['rank']}: {r['score']:.3f} {r['relevance']} (Source: {r['metadata']}, Chunk: {r['chunk_index']})"
+                f"Rank {r['rank']}: {r['score']:.3f} {r['relevance']} "
+                f"(Source: {r['metadata']}, Chunk: {r['chunk_index']})"
             )
             print(f" {r['text'][:120]}")
