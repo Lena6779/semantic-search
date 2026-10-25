@@ -1,0 +1,41 @@
+Prompt Engineering Notes
+
+What is Prompt Engineering?
+
+Prompt engineering is the practice of writing instructions for large language models (LLMs) so they produce useful, accurate, and consistent output. The same model can give a vague, rambling answer or a precise, well-structured one depending entirely on how the request is worded. Small changes to a prompt can make a big difference in quality.
+
+Be Clear and Specific
+
+The most common mistake is a prompt that is too vague. "Write about dogs" leaves the model to guess the audience, length, tone, and focus. A better prompt says exactly what is wanted: "Write a 150-word paragraph for first-time dog owners explaining how to crate train a puppy. Use a friendly, encouraging tone." Specific prompts include the task, the audience, the length, the format, and any constraints.
+
+Give Context
+
+Models only know what is in the prompt and their training data. They do not know your project, your users, or your goals unless you tell them. Explaining why you need something often improves the result, because the model can make better judgment calls about what to include and what to leave out.
+
+Assign a Role
+
+Starting a prompt with a role, such as "You are an experienced Python instructor," helps set the tone, vocabulary, and depth of the response. In API calls, the role and general behavior rules usually go in the system prompt, while the specific request goes in the user message.
+
+Use Examples
+
+Showing the model one or more examples of the desired output is called few-shot prompting. A prompt with no examples is called zero-shot. Examples are one of the most effective ways to control format and style, because the model can see exactly what a good answer looks like instead of interpreting a description.
+
+Specify the Output Format
+
+If the output will be used by code, ask for a specific structure, such as JSON with named fields, a numbered list, or a table. Being explicit about format reduces the need to clean up the response afterward. Delimiters like triple quotes or XML-style tags help separate instructions from the data the model should work on.
+
+Break Down Complex Tasks
+
+For complicated problems, asking the model to work step by step, or splitting the task into several smaller prompts, usually produces better results than one giant request. This is sometimes called chain-of-thought or prompt chaining.
+
+Prompts in RAG Systems
+
+In Retrieval-Augmented Generation, relevant chunks from a vector database are inserted into the prompt as context, and the model is told to answer using only that context. A good RAG prompt tells the model to say it does not know when the answer is not in the provided context, which reduces hallucinations, meaning confident answers that are made up.
+
+Prompt Injection
+
+Prompt injection is a security risk where user input or retrieved content contains instructions that try to override the original prompt, such as "ignore all previous instructions." Defenses include validating input, clearly separating instructions from untrusted data, limiting what the model is allowed to do, and checking the output before showing it to users or acting on it.
+
+Iterate
+
+Prompt engineering is an iterative process. Write a prompt, test it on several inputs, look at where it fails, and revise. Keeping a set of test cases makes it easy to tell whether a change actually improved results.

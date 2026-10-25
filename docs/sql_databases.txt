@@ -1,0 +1,41 @@
+SQL and Relational Databases
+
+What is a Relational Database?
+
+A relational database stores data in tables made of rows and columns. Each table represents one kind of thing, such as students, courses, or books. Each row is a single record, and each column is an attribute of that record. Tables are connected to each other through relationships, which is where the name "relational" comes from.
+
+Popular relational databases include SQLite, PostgreSQL, and MySQL. SQLite is great for learning and small projects because the whole database lives in a single file and requires no separate server.
+
+Primary and Foreign Keys
+
+A primary key uniquely identifies each row in a table, usually an auto-incrementing integer column called id. No two rows can share the same primary key.
+
+A foreign key is a column that refers to the primary key of another table. For example, an enrollments table might have a student_id column that points to the students table. Foreign keys enforce relationships and prevent orphaned records.
+
+Basic SQL Commands
+
+SQL (Structured Query Language) is used to talk to relational databases. The core commands are:
+
+- CREATE TABLE defines a new table and its columns.
+- INSERT INTO adds new rows.
+- SELECT reads data. You can choose specific columns or use * for all of them.
+- UPDATE changes existing rows.
+- DELETE removes rows.
+
+An UPDATE or DELETE without a WHERE clause affects every row in the table, so always double-check your conditions.
+
+Filtering, Sorting, and Aggregating
+
+The WHERE clause filters rows, such as SELECT * FROM books WHERE year > 2000. ORDER BY sorts the results, and LIMIT restricts how many rows come back. Aggregate functions like COUNT, SUM, AVG, MIN, and MAX summarize data. Combined with GROUP BY, they can answer questions like "how many books does each author have?"
+
+Joins
+
+Joins combine rows from multiple tables based on a related column. An INNER JOIN returns only rows that have a match in both tables. A LEFT JOIN returns all rows from the left table, plus matching rows from the right table, filling in NULL where there is no match. Joins are how you answer questions that span tables, like listing every student along with the courses they are enrolled in.
+
+Normalization
+
+Normalization is the process of organizing data to reduce duplication. Instead of storing an author's name in every book row, you store authors in their own table and reference them by ID. This saves space and ensures that updating an author's name only needs to happen in one place.
+
+Using SQL from Python
+
+Python includes the sqlite3 module for working with SQLite. You open a connection, create a cursor, and execute SQL statements. Always use parameterized queries with ? placeholders instead of string formatting. This prevents SQL injection, an attack where malicious input is executed as SQL code. ORMs like SQLAlchemy let you work with tables as Python classes instead of writing raw SQL.

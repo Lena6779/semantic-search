@@ -1,0 +1,31 @@
+Text Embeddings
+
+What is an Embedding?
+
+An embedding is a list of numbers, called a vector, that represents the meaning of a piece of text. An embedding model reads a sentence and outputs a vector, often with a few hundred dimensions. The key property is that texts with similar meanings end up with vectors that are close together, even if they use completely different words.
+
+For example, "How do I reset my password?" and "I forgot my login credentials" share almost no words, but their embeddings would be very close because they mean nearly the same thing. A sentence about baking bread would be far away from both.
+
+Why Embeddings Matter
+
+Traditional keyword search only finds documents that contain the exact words in the query. If a user searches for "car," a keyword search might miss a document that only says "automobile." Embeddings make **semantic search** possible: searching by meaning instead of exact words. They are also the foundation of recommendation systems, clustering, duplicate detection, and Retrieval-Augmented Generation (RAG).
+
+Sentence Transformers
+
+The `sentence-transformers` library makes it easy to create embeddings in Python. A popular small model is `all-MiniLM-L6-v2`, which produces 384-dimensional vectors. It is fast, runs on a regular laptop without a GPU, and gives good results for general English text.
+
+Using it takes only a few lines: load the model with `SentenceTransformer("all-MiniLM-L6-v2")`, then call `model.encode()` on a string or a list of strings. The first time you load a model, it downloads from the internet; after that, it is cached on your computer.
+
+Measuring Similarity
+
+The most common way to compare two embeddings is **cosine similarity**. It measures the angle between two vectors and ignores their length. The result ranges from -1 to 1, though for most text models it falls between 0 and 1 in practice. A score near 1 means the texts are very similar, and a score near 0 means they are unrelated.
+
+Another option is **Euclidean distance**, which measures the straight-line distance between two points. With distance, smaller numbers mean more similar, the opposite of similarity scores. This is an easy thing to mix up when reading results from a vector database.
+
+Similarity Thresholds
+
+A threshold is a minimum similarity score a result must reach to be shown. A high threshold, like 0.7, returns only very close matches but may miss useful results. A low threshold, like 0.3, returns more results but includes weaker, less relevant ones. Choosing a threshold is a trade-off between precision and recall, and the right value depends on the model and the data.
+
+Limitations
+
+Embeddings are not perfect. Models have a maximum input length, and text beyond it is cut off, which is one reason long documents are split into chunks. Embeddings can also struggle with negation, exact numbers, and very specialized jargon the model was not trained on. Finally, you must use the same model for documents and queries, because vectors from different models are not comparable.

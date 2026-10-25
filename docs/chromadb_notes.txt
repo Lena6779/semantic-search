@@ -1,0 +1,37 @@
+ChromaDB Vector Database Notes
+
+What is a Vector Database?
+
+A vector database stores embeddings along with the original text and extra information about it. Its main job is similarity search: given a query vector, it quickly finds the stored vectors that are closest to it. Regular databases are built for exact matches, like finding the row where id equals 5. Vector databases are built for "find me things that mean something similar to this."
+
+ChromaDB is an open-source vector database designed to be simple to use from Python. It is a popular choice for learning, prototypes, and small to medium RAG applications.
+
+Clients
+
+ChromaDB has different client types. chromadb.Client() creates an in-memory database that disappears when the program ends. chromadb.PersistentClient(path="chroma_data") saves everything to a folder on disk, so the data is still there the next time you run the program. For any real project, the persistent client is the right choice, because re-embedding all documents every time the app starts is slow.
+
+Collections
+
+Data in ChromaDB is organized into collections, which are similar to tables in a relational database. You create or open a collection with client.get_or_create_collection(name="my_docs"). Using get_or_create is safer than create, because create raises an error if the collection already exists.
+
+Adding Data
+
+You add data with collection.add(), passing parallel lists of ids, documents, and optionally metadatas and embeddings. Every item needs a unique string ID. If you do not provide embeddings, ChromaDB will generate them with its default embedding model. You can also compute embeddings yourself with sentence-transformers and pass them in, which gives you full control over which model is used. collection.upsert() works like add but updates items that already exist instead of raising an error, which is useful when re-running an ingestion script.
+
+Metadata
+
+Metadata is a dictionary of extra information attached to each item, such as the source filename, the chunk index, a category, or a date. Metadata values must be simple types: strings, integers, floats, or booleans. Metadata makes it possible to show users where a result came from and to filter searches.
+
+Querying
+
+collection.query() searches the collection. You pass query_texts or query_embeddings and n_results to set how many matches to return. The result is a dictionary containing ids, documents, metadatas, and distances. The results are nested lists because you can send several queries at once, so the matches for the first query are at index 0.
+
+ChromaDB returns distances, not similarity scores. Smaller distance means a closer match. By default it uses squared L2 (Euclidean) distance, but you can choose cosine distance when creating a collection by setting the metadata option hnsw:space to cosine. With cosine distance, you can convert to a similarity score with similarity = 1 - distance.
+
+Filtering
+
+The where parameter filters results by metadata, for example where={"source": "fastapi_basics.txt"} returns only chunks from that file. Operators like $eq, $ne, $gt, $lt, and $in allow more complex filters. The where_document parameter filters by the text itself, such as requiring that a document contains a certain word.
+
+Other Operations
+
+collection.count() returns the number of items. collection.get() retrieves items by ID or filter without doing a similarity search. collection.delete() removes items, and client.delete_collection() removes an entire collection, which is handy when you want to rebuild from scratch.

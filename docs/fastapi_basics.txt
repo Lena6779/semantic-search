@@ -1,0 +1,31 @@
+FastAPI Basics
+
+FastAPI is a modern Python web framework for building APIs. It is fast, easy to learn, and built on standard Python type hints. Because it uses type hints, FastAPI can automatically validate incoming data, convert it to the right types, and generate interactive documentation.
+
+Creating an App
+
+A minimal FastAPI app needs only a few lines. You import FastAPI, create an instance called app, and decorate functions with route decorators like @app.get("/") or @app.post("/tasks"). Each decorated function is called a path operation function. Whatever the function returns is automatically converted to JSON in the response.
+
+To run the app, you use Uvicorn, an ASGI server. The command uvicorn main:app --reload starts the server, where main is the filename and app is the FastAPI instance. The --reload flag restarts the server automatically whenever you save changes to your code, which is helpful during development but should not be used in production.
+
+Automatic Documentation
+
+One of FastAPI's best features is automatic interactive documentation. When the server is running, visiting /docs opens Swagger UI, where you can see every endpoint and test it directly in the browser. Visiting /redoc shows an alternative documentation style. You can improve these docs by adding summaries, descriptions, tags, and example values to your endpoints and models.
+
+Pydantic Models
+
+FastAPI uses Pydantic models to define the shape of request and response data. A model is a class that inherits from BaseModel, with each field declared using a type hint. For example, a TaskCreate model might have a title field of type str and a completed field of type bool with a default of False. When a client sends a POST request, FastAPI checks the body against the model. If a field is missing or has the wrong type, FastAPI automatically returns a 422 error with details about what went wrong.
+
+It is common to create separate models for different purposes: one for creating an item, one for updating it, and one for the response. This keeps sensitive fields, like passwords, out of responses.
+
+Dependency Injection
+
+FastAPI has a built-in dependency injection system using Depends. A dependency is a function that runs before your endpoint, and its result is passed into the endpoint as a parameter. Dependencies are commonly used to get a database session, check authentication, or read the current user from a JWT token. This keeps endpoint code clean and makes shared logic reusable.
+
+Routers
+
+As an app grows, putting every endpoint in one file becomes messy. APIRouter lets you split endpoints into separate files, such as routers/tasks.py and routers/users.py, and then include them in the main app with app.include_router(). Each router can have its own prefix and tags.
+
+Error Handling
+
+To return an error, you raise an HTTPException with a status code and a detail message, for example raise HTTPException(status_code=404, detail="Task not found"). FastAPI converts it into a proper JSON error response.

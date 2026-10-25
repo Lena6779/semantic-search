@@ -1,0 +1,47 @@
+REST API Fundamentals
+
+What is a REST API?
+
+REST stands for Representational State Transfer. It is an architectural style for designing web services that communicate over HTTP. A REST API exposes resources, such as users, tasks, or books, at specific URLs called endpoints. Clients interact with those resources by sending HTTP requests and receiving responses, usually formatted as JSON.
+
+The key idea is that everything is a resource with a unique address. For example, /tasks represents the collection of all tasks, while /tasks/5 represents the single task with ID 5.
+
+HTTP Methods
+
+REST APIs use HTTP methods (also called verbs) to describe what action the client wants to take:
+
+- GET retrieves data. It should never change anything on the server.
+- POST creates a new resource. The data for the new item goes in the request body.
+- PUT replaces an existing resource completely with new data.
+- PATCH updates only some fields of an existing resource.
+- DELETE removes a resource.
+
+Together, POST, GET, PUT/PATCH, and DELETE map to the four CRUD operations: Create, Read, Update, and Delete.
+
+Status Codes
+
+Every response includes a status code that tells the client what happened:
+
+- 200 OK means the request succeeded.
+- 201 Created means a new resource was created, typically after a POST.
+- 204 No Content means success with nothing to return, common after a DELETE.
+- 400 Bad Request means the client sent invalid data.
+- 401 Unauthorized means the client is not logged in or the token is missing.
+- 403 Forbidden means the client is logged in but not allowed to do this.
+- 404 Not Found means the resource does not exist.
+- 422 Unprocessable Entity means the data failed validation.
+- 500 Internal Server Error means something broke on the server.
+
+Codes in the 200s mean success, 400s mean the client made a mistake, and 500s mean the server made a mistake.
+
+Statelessness
+
+REST APIs are stateless. Each request must contain all the information the server needs to process it. The server does not remember previous requests. This is why authentication tokens, like JWTs, are sent with every request in the Authorization header rather than stored in a server-side session.
+
+Path and Query Parameters
+
+Path parameters identify a specific resource and are part of the URL itself, like the 5 in /tasks/5. Query parameters filter or modify the results and come after a question mark, such as /tasks?completed=true&limit=10. A good rule is to use path parameters for identity and query parameters for filtering, sorting, and pagination.
+
+Designing Good Endpoints
+
+Good REST design uses plural nouns for collections (/books, not /getBooks), lets the HTTP method describe the action, returns consistent JSON structures, and uses accurate status codes. Versioning the API, such as /v1/books, makes it possible to introduce changes later without breaking existing clients.

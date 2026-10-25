@@ -1,0 +1,31 @@
+Building Apps with Streamlit
+
+Streamlit is an open-source Python library that turns Python scripts into interactive web apps. You do not need to know HTML, CSS, or JavaScript. You write ordinary Python, call Streamlit functions to add elements to the page, and Streamlit handles the web interface for you. It is especially popular for data dashboards, machine learning demos, and AI tools.
+
+Running an App
+
+You run a Streamlit app from the terminal with streamlit run app.py. This starts a local server and opens the app in your browser, usually at localhost:8501. When you save changes to the file, Streamlit offers to rerun the app so you can see your updates right away.
+
+The Rerun Model
+
+The most important concept in Streamlit is that the entire script reruns from top to bottom every time a user interacts with a widget. Clicking a button, typing in a text box, or moving a slider all trigger a full rerun. This makes Streamlit simple to reason about, but it also means regular variables are reset on every rerun. Expensive work, like loading a machine learning model, should be cached so it does not repeat each time.
+
+Displaying Content
+
+Streamlit has many functions for showing content. st.title, st.header, and st.subheader add headings. st.write is a flexible function that can display text, numbers, dataframes, and more. st.markdown renders Markdown formatting. st.metric shows a large number with an optional change indicator, which is useful for dashboards. st.success, st.warning, st.error, and st.info show colored message boxes.
+
+Widgets
+
+Widgets collect input from the user. Common widgets include st.text_input for typing text, st.button for clicks, st.slider for picking a number in a range, st.selectbox for choosing one option from a dropdown, st.multiselect for choosing several options, and st.checkbox for true or false values. Each widget returns its current value, so you can assign it to a variable and use it in the rest of the script.
+
+Layout
+
+Streamlit provides several layout tools. st.sidebar places widgets in a collapsible panel on the left, which is ideal for filters and settings. st.columns splits the page into side-by-side sections. st.tabs creates tabbed sections, and st.expander creates a collapsible box that hides details until the user clicks it. Calling st.set_page_config(layout="wide") at the top of the script uses the full browser width.
+
+Session State
+
+Because the script reruns constantly, Streamlit provides st.session_state to remember values between reruns. It works like a dictionary. You can store a quiz score, a login token, or a list of chat messages in session state, and the value will survive as long as the browser tab stays open.
+
+Caching
+
+Streamlit has two caching decorators. st.cache_data is for data such as API responses or dataframes. st.cache_resource is for shared resources that should only be created once, such as a machine learning model or a database connection. Using st.cache_resource on a function that loads an embedding model means the model loads once instead of on every interaction.

@@ -1,0 +1,35 @@
+Chunking Strategies for Semantic Search
+
+Why Chunk Documents?
+
+Chunking means splitting long documents into smaller pieces before embedding them. There are three main reasons to do this. First, embedding models have a maximum input length, and any text beyond it is silently cut off. Second, a single embedding for a long document blends many topics together, so it does not match any specific question very well. Third, when search results are shown to a user or passed to a language model, smaller focused pieces are more useful than an entire document.
+
+A good chunk should be small enough to be about one idea, but large enough to make sense on its own.
+
+Fixed-Size Chunking
+
+Fixed-size chunking splits text into pieces of a set length, measured in characters, words, or tokens. For example, you might cut every 500 characters. It is simple to implement and produces evenly sized chunks, which makes results predictable.
+
+The downside is that fixed-size chunking ignores the structure of the text. A cut can land in the middle of a sentence or even a word, splitting a key idea across two chunks so neither one fully captures it.
+
+Overlap
+
+Overlap helps fix the boundary problem. With overlap, each chunk repeats the last part of the previous chunk. If the chunk size is 500 characters and the overlap is 100, each new chunk starts 400 characters after the previous one began. An idea that gets cut at a boundary still appears whole in at least one chunk.
+
+A common starting point is an overlap of 10 to 20 percent of the chunk size. Too much overlap creates many near-duplicate chunks, which wastes storage and can fill the search results with repeated content.
+
+Sentence and Paragraph Chunking
+
+Structure-aware strategies split on natural boundaries. Paragraph chunking splits wherever there is a blank line, so each chunk is a complete paragraph. Sentence chunking groups a few complete sentences together. These methods keep ideas intact, but chunk sizes can vary a lot: one paragraph might be a single line, while another is very long.
+
+Recursive Chunking
+
+Recursive chunking combines both approaches. It first tries to split on the largest boundary, like paragraphs. If a piece is still too large, it splits that piece on sentences, then on words, until every chunk fits under the size limit. This respects structure while still enforcing a maximum size, which is why it is a popular default in RAG frameworks.
+
+Choosing a Chunk Size
+
+There is no single best chunk size. Small chunks, around 200 characters, are very precise but may lack context, so a result might be technically relevant but hard to understand alone. Large chunks, around 1,000 characters or more, have plenty of context but may mix several topics and match queries less sharply. Medium chunks often give the best balance.
+
+Running a Chunking Experiment
+
+The best way to choose a strategy is to test it. Pick a set of test questions where you already know which document should answer each one. Build a separate collection for each chunking configuration, run the same questions against each, and compare the results. Useful things to record include the number of chunks created, whether the correct source appears in the top results, the similarity scores, and whether the top chunk actually answers the question. Writing down these observations turns a guess into an evidence-based decision.
