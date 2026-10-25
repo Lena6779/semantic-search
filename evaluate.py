@@ -1,10 +1,18 @@
-"""Chunking experiment: compare chunk sizes using precision and recall."""
+"""Chunking experiment: compare chunk sizes using precision and recall.
+
+For each chunk configuration, this script re-chunks and re-indexes all
+documents into its own ChromaDB collection, runs the same test queries,
+and records the top results, their scores, and whether they are relevant.
+A summary table is printed at the end for the README.
+"""
 
 from sentence_transformers import SentenceTransformer
 
 from ingest import MODEL_NAME, load_documents, chunk_documents, build_collection
 from search import search
 
+# Chunk sizes to compare. Overlap is ~10% of chunk size so a sentence split
+# at a chunk boundary still appears whole in at least one chunk.
 CONFIGS = [
     {"chunk_size": 200, "overlap": 20},
     {"chunk_size": 500, "overlap": 50},
@@ -12,26 +20,24 @@ CONFIGS = [
 ]
 
 K = 5  # Number of results to evaluate per query
+TOP_N_DETAIL = 3  # Number of results shown in detail per query (experiment guide)
 
+# Each test query has one document that should answer it. A result counts as
+# relevant if it came from that expected file.
 TEST_QUERIES = [
-    # Q1: 404 status code
     {"query": "What does a 404 status code mean?", "expected": "rest_apis.txt"},
-    # Q2: Streamlit rerun values
     {
         "query": "How do I keep values between reruns in Streamlit?",
         "expected": "streamlit_guide.txt",
     },
-    # Q3: Prevent language model hallucinations
     {
         "query": "How do I stop a language model from making up answers?",
         "expected": "prompt_engineering.txt",
     },
-    # Q4: SQL injection protection
     {
         "query": "How can I protect my database from SQL injection?",
         "expected": "sql_databases.txt",
     },
-    # Q5: Persistent vector storage client
     {
         "query": "Which client should I use so my vectors are saved between runs?",
         "expected": "chromadb_notes.txt",
@@ -40,20 +46,44 @@ TEST_QUERIES = [
 
 
 def evaluate_query(results, expected, total_relevant):
-    """Score one query's results against the file that should answer it."""
+    """Score one query's results against the file that should answer it.
+
+    Args:
+        results: Search results, each a dict with "metadata" (source file)
+            and "score" (similarity).
+        expected: Filename that should answer the query.
+        total_relevant: Number of chunks in the collection that come from
+            the expected file.
+
+    Returns:
+        Dict with top1 (bool), precision, recall, and top_score.
+    """
     hits = sum(1 for r in results if r["metadata"] == expected)
     return {
         "top1": bool(results) and results[0]["metadata"] == expected,
+        # Precision: of the K results returned, how many were relevant
         "precision": hits / len(results) if results else 0.0,
+        # Recall: of all relevant chunks in the collection, how many we found
         "recall": hits / total_relevant if total_relevant else 0.0,
         "top_score": results[0]["score"] if results else 0.0,
     }
 
 
 def run_config(config, documents, model):
-    """Build a collection for one chunk configuration and score all test queries."""
+    """Build a collection for one chunk configuration and score all test queries.
+
+    Args:
+        config: Dict with "chunk_size" and "overlap" in characters.
+        documents: Loaded documents from ingest.load_documents().
+        model: SentenceTransformer used to embed chunks and queries.
+
+    Returns:
+        Tuple of (number of chunks created, list of per-query result rows).
+    """
     size, overlap = config["chunk_size"], config["overlap"]
     chunks = chunk_documents(documents, chunk_size=size, overlap=overlap)
+
+    # Separate collection per size so results from different configs don't mix
     collection = build_collection(chunks, model, collection_name=f"experiment_{size}")
 
     rows = []
@@ -62,7 +92,13 @@ def run_config(config, documents, model):
         total_relevant = sum(1 for c in chunks if c["source"] == test["expected"])
         scores = evaluate_query(results, test["expected"], total_relevant)
         rows.append(
-            {"query": test["query"], "top_source": results[0]["metadata"], **scores}
+            {
+                "query": test["query"],
+                "expected": test["expected"],
+                "top_source": results[0]["metadata"] if results else "(none)",
+                "results": results,  # Kept so the top 3 can be printed in detail
+                **scores,
+            }
         )
     return len(chunks), rows
 
@@ -70,6 +106,19 @@ def run_config(config, documents, model):
 def average(rows, key):
     """Average one metric across all test queries."""
     return sum(r[key] for r in rows) / len(rows)
+
+
+def print_query_detail(row):
+    """Print one query's metrics plus its top results with scores and relevance."""
+    mark = "✅" if row["top1"] else "❌"
+    print(
+        f"{mark} {row['query'][:50]:<50} top: {row['top_source']:<24} "
+        f"P@{K}={row['precision']:.2f}  R@{K}={row['recall']:.2f}  "
+        f"score={row['top_score']:.3f}"
+    )
+    for i, res in enumerate(row["results"][:TOP_N_DETAIL], 1):
+        relevant = "relevant" if res["metadata"] == row["expected"] else "not relevant"
+        print(f"     {i}. {res['metadata']:<24} score={res['score']:.3f}  ({relevant})")
 
 
 if __name__ == "__main__":
@@ -85,11 +134,7 @@ if __name__ == "__main__":
         n_chunks, rows = run_config(config, documents, model)
 
         for r in rows:
-            mark = "✅" if r["top1"] else "❌"
-            print(
-                f"{mark} {r['query'][:50]:<50} top: {r['top_source']:<24} "
-                f"P@{K}={r['precision']:.2f}  R@{K}={r['recall']:.2f}  score={r['top_score']:.3f}"
-            )
+            print_query_detail(r)
 
         summary.append(
             {
@@ -102,6 +147,7 @@ if __name__ == "__main__":
             }
         )
 
+    # Markdown table so the results can be pasted straight into the README
     print("\n\n## Summary (paste into README)\n")
     print(
         f"| Chunk size / overlap | Chunks | Top-1 correct | Avg P@{K} | Avg R@{K} | Avg top score |"

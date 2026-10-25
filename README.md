@@ -31,7 +31,7 @@ semantic-search/
 
 1. Clone the repository and move into the folder:
    ```bash
-   git clone <>
+   git clone https://github.com/Lena6779/semantic-search.git
    cd semantic-search
    ```
 
@@ -97,22 +97,21 @@ docs/*.txt → load → chunk → embed → store in ChromaDB → search → Str
 
 The label cutoffs are based on my own test results: clearly correct answers scored above 0.5, and weaker matches scored in the 0.3s.
 
-
 ## Chunking Experiment
 
 ### Setup
 
-`evaluate.py` compares three chunk sizes. Overlap is kept at 10% of the chunk size each time, so chunk size is the only thing that changes.
+I compared three chunk sizes. For each one, all documents in `docs/` were re-chunked and re-indexed into their own ChromaDB collection, and the same 5 test queries were run. Overlap was set to about 10% of the chunk size so sentences split at a boundary still appear whole in at least one chunk. Each query has one expected source file, and a result counts as relevant if it comes from that file.
 
-| Configuration | Chunk size | Overlap |
-|---|---|---|
-| Small | 200 | 20 |
-| Medium | 500 | 50 |
-| Large | 1000 | 100 |
+Run it with:
 
-Each configuration is stored in its own ChromaDB collection and tested with the same 5 queries. Each query has an expected source file that holds the answer. Several are paraphrased on purpose, so they don't share keywords with the documents:
+```
+python evaluate.py
+```
 
-| # | Query | Expected source |
+**Test queries**
+
+| # | Query | Expected file |
 |---|---|---|
 | 1 | What does a 404 status code mean? | rest_apis.txt |
 | 2 | How do I keep values between reruns in Streamlit? | streamlit_guide.txt |
@@ -120,47 +119,76 @@ Each configuration is stored in its own ChromaDB collection and tested with the 
 | 4 | How can I protect my database from SQL injection? | sql_databases.txt |
 | 5 | Which client should I use so my vectors are saved between runs? | chromadb_notes.txt |
 
-**Metrics** (top 5 results per query):
-- **Top-1 correct:** is the #1 result from the expected file?
-- **Precision@5:** what fraction of the 5 results came from the expected file?
-- **Recall@5:** what fraction of the expected file's chunks appeared in the top 5?
-- **Top score:** the similarity score of the #1 result.
-
-### Results
+### Results summary
 
 | Chunk size / overlap | Chunks | Top-1 correct | Avg P@5 | Avg R@5 | Avg top score |
 |---|---|---|---|---|---|
 | 200 / 20 | 142 | 5/5 | 0.72 | 0.20 | 0.480 |
-| **500 / 50** | **59** | **5/5** | **0.84** | **0.57** | **0.477** |
+| 500 / 50 | 59 | 5/5 | **0.84** | 0.57 | 0.477 |
 | 1000 / 100 | 32 | 5/5 | 0.64 | 0.80 | 0.462 |
 
-**Per query** (Precision@5 / top score):
+### Top 3 results per query
 
-| Query | 200 | 500 | 1000 |
+Relevant results are marked ✅ and irrelevant ones ❌.
+
+**Q1: What does a 404 status code mean?**
+
+| Rank | 200 | 500 | 1000 |
 |---|---|---|---|
-| 404 status code | 0.80 / 0.528 | 0.80 / 0.565 | 0.80 / 0.518 |
-| Streamlit reruns | 1.00 / 0.606 | 1.00 / 0.582 | 0.80 / 0.505 |
-| LLM making up answers | 0.80 / 0.454 | 1.00 / 0.407 | 0.60 / 0.397 |
-| SQL injection | 0.40 / 0.408 | 0.80 / 0.422 | 0.60 / 0.422 |
-| Vectors saved between runs | 0.60 / 0.403 | 0.60 / 0.410 | 0.40 / 0.467 |
+| 1 | ✅ rest_apis (0.528) | ✅ rest_apis (0.565) | ✅ rest_apis (0.518) |
+| 2 | ✅ rest_apis (0.504) | ✅ rest_apis (0.440) | ❌ fastapi_basics (0.431) |
+| 3 | ✅ rest_apis (0.469) | ❌ fastapi_basics (0.431) | ✅ rest_apis (0.277) |
 
-### Findings
+**Q2: How do I keep values between reruns in Streamlit?**
 
-1. **Top-1 was perfect at every size (5/5).** The 8 documents cover clearly different topics, so the right file always ranked first. That means Top-1 alone couldn't tell the sizes apart, and precision and recall were more useful.
+| Rank | 200 | 500 | 1000 |
+|---|---|---|---|
+| 1 | ✅ streamlit_guide (0.606) | ✅ streamlit_guide (0.582) | ✅ streamlit_guide (0.505) |
+| 2 | ✅ streamlit_guide (0.596) | ✅ streamlit_guide (0.551) | ✅ streamlit_guide (0.493) |
+| 3 | ✅ streamlit_guide (0.584) | ✅ streamlit_guide (0.473) | ✅ streamlit_guide (0.434) |
 
-2. **500 had the best precision (0.84).** Its top 5 results were the most consistently from the right file, with perfect precision on 2 of the 5 queries.
+**Q3: How do I stop a language model from making up answers?**
 
-3. **Recall rises with chunk size, but partly because of how it's measured.** At size 1000, each file has only about 4 chunks, so the top 5 can easily include all of them. At size 200, each file has about 17–24 chunks, so the top 5 can never cover more than about 25%. The same effect limits precision at 1000: if a file has only 4 chunks, the 5th result has to come from a different file. So the higher recall at 1000 doesn't mean the search was better.
+| Rank | 200 | 500 | 1000 |
+|---|---|---|---|
+| 1 | ✅ prompt_engineering (0.454) | ✅ prompt_engineering (0.407) | ✅ prompt_engineering (0.397) |
+| 2 | ✅ prompt_engineering (0.427) | ✅ prompt_engineering (0.363) | ✅ prompt_engineering (0.378) |
+| 3 | ✅ prompt_engineering (0.402) | ✅ prompt_engineering (0.363) | ✅ prompt_engineering (0.362) |
 
-4. **Small chunks were best for focused questions.** "Streamlit reruns" scored 0.606 at size 200 but only 0.505 at 1000. The answer is one specific idea, and bigger chunks dilute it with unrelated text.
+**Q4: How can I protect my database from SQL injection?**
 
-5. **Large chunks helped when the answer was spread out.** "Vectors saved between runs" scored highest at 1000 (0.467). The answer is spread across several sentences (persistent client, saving to disk, the next run), which fit together in one large chunk.
+| Rank | 200 | 500 | 1000 |
+|---|---|---|---|
+| 1 | ✅ sql_databases (0.408) | ✅ sql_databases (0.422) | ✅ sql_databases (0.422) |
+| 2 | ✅ sql_databases (0.316) | ❌ prompt_engineering (0.315) | ❌ prompt_engineering (0.302) |
+| 3 | ❌ fastapi_basics (0.316) | ✅ sql_databases (0.273) | ✅ sql_databases (0.271) |
 
-6. **Small chunks lost context on the SQL injection query.** At size 200, precision dropped to 0.40, with 3 of the 5 results from other files. Short chunks containing the word "injection" likely matched the *prompt* injection section of `prompt_engineering.txt`. At size 500, precision went back up to 0.80, because the surrounding text made the topic clear.
+**Q5: Which client should I use so my vectors are saved between runs?**
 
-### Conclusion
+| Rank | 200 | 500 | 1000 |
+|---|---|---|---|
+| 1 | ✅ chromadb_notes (0.403) | ✅ chromadb_notes (0.410) | ✅ chromadb_notes (0.467) |
+| 2 | ✅ chromadb_notes (0.394) | ✅ chromadb_notes (0.360) | ✅ chromadb_notes (0.372) |
+| 3 | ❌ sql_databases (0.343) | ✅ chromadb_notes (0.310) | ❌ streamlit_guide (0.270) |
 
-**500 characters with 50 overlap is the best balance**, so it's the setting the app uses. It had the highest precision, middle recall, and perfect Top-1. Size 200 lost context on ambiguous queries, and 1000 diluted focused answers.
+### Analysis
+
+**Which chunk size worked best overall:** 500 characters with 50 overlap. Every size got the correct file as the #1 result for all 5 queries, so the differences showed up in the rest of the ranking. The 500 size had the highest average precision (0.84), so more of its top 5 results came from the right file. It also kept recall at a reasonable 0.57, and it was the only size where Q5 returned three relevant results in its top 3.
+
+**Which queries showed the biggest difference:**
+- **Q4 (SQL injection)** had the largest precision swing: 0.40 at 200, 0.80 at 500, and 0.60 at 1000. At 200 characters, a FastAPI chunk tied the second SQL chunk on score (both 0.316), probably because both files talk about input validation and security in short, similar-sounding sentences.
+- **Q3 (hallucinations)** went from 0.80 precision at 200 to 1.00 at 500, then dropped to 0.60 at 1000.
+- **Q5 (persistent client)** had an irrelevant result in the top 3 at both 200 and 1000, but not at 500.
+
+**Recall rises with chunk size, but that is partly an artifact.** Recall is measured as relevant chunks found divided by all chunks from the expected file. Larger chunks mean each file has fewer chunks in total (32 chunks overall at 1000 vs 142 at 200), so finding just 2 to 4 of them already gives high recall. The 1000 size returns about the same text, split into fewer and bigger pieces, so its 0.80 recall does not mean it actually found more useful information.
+
+### Hypothesis
+
+- **Small chunks (200)** often cut an explanation in the middle. Each piece holds only a sentence or two, so short fragments from unrelated files that share a few keywords, such as "validate," "database," or "save," can look similar to the query. That is why off-topic files slipped in for Q4 and Q5, even though the top-1 scores were the highest of the three sizes.
+- **Large chunks (1000)** hold several topics at once. The embedding becomes an average of everything in the chunk, which blurs the one part that actually answers the question. This lowered precision and the average top score (0.462).
+- **Medium chunks (500)** were usually large enough to hold one complete idea and small enough to stay focused on it, which gave the best balance of precision and recall for this collection.
+
+For this collection of short course notes, 500 characters is the size I would use in the app. A collection with longer or differently structured documents could need a different size, which is why it is worth testing on real data.
 
 ## Limitations and Observations
 
