@@ -26,19 +26,24 @@ TOP_N_DETAIL = 3  # Number of results shown in detail per query (experiment guid
 # Each test query has one document that should answer it. A result counts as
 # relevant if it came from that expected file.
 TEST_QUERIES = [
+    # Q1
     {"query": "What does a 404 status code mean?", "expected": "rest_apis.txt"},
+    # Q2
     {
         "query": "How do I keep values between reruns in Streamlit?",
         "expected": "streamlit_guide.txt",
     },
+    # Q3
     {
         "query": "How do I stop a language model from making up answers?",
         "expected": "prompt_engineering.txt",
     },
+    # Q4
     {
         "query": "How can I protect my database from SQL injection?",
         "expected": "sql_databases.txt",
     },
+    # Q5
     {
         "query": "Which client should I use so my vectors are saved between runs?",
         "expected": "chromadb_notes.txt",
